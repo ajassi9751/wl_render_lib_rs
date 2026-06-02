@@ -1,5 +1,5 @@
 // Represents an angle
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Angle {
     data: i64
 }

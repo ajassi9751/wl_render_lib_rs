@@ -26,7 +26,7 @@ impl <'a> Image <'a> {
 }
 
 // Simmilar to a swerve request in ctre, represents an object that stores rotations and such that are requested for an image
-#[derive(Debug)] // New does the same as default so it isn't derived
+#[derive(Debug, PartialEq, Eq)] // New does the same as default so it isn't derived
 pub struct ImageRequest {
     actions: Vec<ImageAction>
 }
@@ -57,7 +57,7 @@ pub type PixelCoordinate = (Pixels, Pixels);  // Tuple of pixels, X and Y respec
 
 // Enum that represents an action that can be done to an image
 #[non_exhaustive]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ImageAction {
     Rotate(Angle),
     Translate(PixelCoordinate),
