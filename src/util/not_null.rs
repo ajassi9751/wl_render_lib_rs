@@ -4,7 +4,7 @@ pub struct NotNull<T> {
     ptr: *mut T
 }
 
-impl <T> NotNull<T> {
+impl <T> NotNull <T> {
     pub fn try_from (ptr: *mut T) -> Option<Self> {
         if ptr.is_null() {
             None
@@ -18,4 +18,10 @@ impl <T> NotNull<T> {
     pub fn get (&self) -> *mut T {
         self.ptr
     }
+}
+
+#[test]
+fn not_null_none_test () {
+    let ptr: Option<NotNull<u8>> = NotNull::try_from(core::ptr::null_mut::<u8>());
+    assert!(matches!(ptr, None));
 }
