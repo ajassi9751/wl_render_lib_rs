@@ -1,27 +1,41 @@
 use crate::render::config::Config;
+use crate::util::not_null::NotNull;
 use crate::util::units::angle::Angle;
 
 use super::config::Pixels;
 use super::rgba::Rgba;
 
+#[allow(unused)]
+pub type Pixels = u32; // Maybe make this usize
+
 // Represents an image as an array of pixels (rgbas)
 // Can be rotated
 #[derive(Debug)]
-pub struct Image <'a> {
+pub struct Image {
     data: Vec<Vec<Rgba>>,
-    config: &'a Config // No need to own here
+    ptr: NotNull<u8>, // Might have to be stored in the image struct
+    width: Pixels,
+    height: Pixels,
 }
 
-impl <'a> Image <'a> {
-    pub fn new (config: &'a Config) -> Self {
+impl Image {
+    pub fn new (ptr: NotNull<u8>, width: Pixels, height: Pixels) -> Self {
         Self {
             // This is probably a really bad way to do this
-            data: vec![vec![Rgba::default(); config.get_height() as usize]; config.get_width() as usize],
-            config: config
+            data: vec![vec![Rgba::default(); height as usize]; width as usize],
+            ptr: ptr,
+            width: width,
+            height: height
         }
     }
     pub fn apply_request (request: &ImageRequest) {
 
+    }
+    fn get_coordinate_mut (&mut self, x: usize, y: usize) -> &mut Rgba {
+        &mut self.data[x][y]
+    }
+    fn get_coordinate (&self, x: usize, y: usize) -> &Rgba {
+        &self.data[x][y]
     }
 }
 
