@@ -1,8 +1,6 @@
-use crate::render::config::Config;
 use crate::util::not_null::NotNull;
 use crate::util::units::angle::Angle;
 
-use super::config::Pixels;
 use super::rgba::Rgba;
 
 #[allow(unused)]
