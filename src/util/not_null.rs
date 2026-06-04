@@ -23,6 +23,7 @@ impl <T> NotNull <T> {
     pub fn get (&self) -> *const T {
         self.ptr
     }
+    // Also could be accesed without &mut self but that seems a bit unsafe too
     pub fn as_mut (&mut self) -> &mut T {
         unsafe {
             self.ptr.as_mut_unchecked()

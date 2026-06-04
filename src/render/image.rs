@@ -10,7 +10,7 @@ pub type Pixels = u32; // Maybe make this usize
 // Can be rotated
 #[derive(Debug)]
 pub struct Image {
-    data: Vec<Vec<Argb>>, // Contains unprocessed Rgbas
+    data: Vec<Argb>, // Contains unprocessed Rgbas
     ptr: NotNull<u8>,
     width: Pixels,
     height: Pixels,
@@ -20,7 +20,7 @@ impl Image {
     pub fn new (ptr: NotNull<u8>, width: Pixels, height: Pixels) -> Self {
         Self {
             // This is probably a really bad way to do this
-            data: vec![vec![Argb::default(); height as usize]; width as usize],
+            data: vec![Argb::default(); height as usize],
             ptr: ptr,
             width: width,
             height: height
@@ -30,10 +30,10 @@ impl Image {
 
     }
     fn get_coordinate_mut (&mut self, x: usize, y: usize) -> &mut Argb {
-        &mut self.data[x][y]
+        &mut self.data[y * self.width as usize + x]
     }
     fn get_coordinate (&self, x: usize, y: usize) -> &Argb {
-        &self.data[x][y]
+        &self.data[y * self.width as usize + x]
     }
 }
 
