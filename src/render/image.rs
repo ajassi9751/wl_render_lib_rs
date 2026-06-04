@@ -1,7 +1,7 @@
 use crate::util::not_null::NotNull;
 use crate::util::units::angle::Angle;
 
-use super::rgba::Rgba;
+use super::rgba::Argb;
 
 #[allow(unused)]
 pub type Pixels = u32; // Maybe make this usize
@@ -10,8 +10,8 @@ pub type Pixels = u32; // Maybe make this usize
 // Can be rotated
 #[derive(Debug)]
 pub struct Image {
-    data: Vec<Vec<Rgba>>,
-    ptr: NotNull<u8>, // Might have to be stored in the image struct
+    data: Vec<Vec<Argb>>, // Contains unprocessed Rgbas
+    ptr: NotNull<u8>,
     width: Pixels,
     height: Pixels,
 }
@@ -20,7 +20,7 @@ impl Image {
     pub fn new (ptr: NotNull<u8>, width: Pixels, height: Pixels) -> Self {
         Self {
             // This is probably a really bad way to do this
-            data: vec![vec![Rgba::default(); height as usize]; width as usize],
+            data: vec![vec![Argb::default(); height as usize]; width as usize],
             ptr: ptr,
             width: width,
             height: height
@@ -29,10 +29,10 @@ impl Image {
     pub fn apply_request (request: &ImageRequest) {
 
     }
-    fn get_coordinate_mut (&mut self, x: usize, y: usize) -> &mut Rgba {
+    fn get_coordinate_mut (&mut self, x: usize, y: usize) -> &mut Argb {
         &mut self.data[x][y]
     }
-    fn get_coordinate (&self, x: usize, y: usize) -> &Rgba {
+    fn get_coordinate (&self, x: usize, y: usize) -> &Argb {
         &self.data[x][y]
     }
 }

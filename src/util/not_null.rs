@@ -1,4 +1,5 @@
 // Just a pointer that is garunteed to be not null
+// Better than NonNull because you don't have to check if its valid every time you access it
 #[derive(Debug)]
 pub struct NotNull<T> {
     ptr: *mut T
@@ -15,8 +16,22 @@ impl <T> NotNull <T> {
             )
         }
     }
-    pub fn get (&self) -> *mut T {
+    // Could be accesed without &mut self but that seems a bit unsafe
+    pub fn get_mut (&mut self) -> *mut T {
         self.ptr
+    }
+    pub fn get (&self) -> *const T {
+        self.ptr
+    }
+    pub fn as_mut (&mut self) -> &mut T {
+        unsafe {
+            self.ptr.as_mut_unchecked()
+        }
+    }
+    pub fn as_ref (&self) -> &T {
+        unsafe {
+            self.ptr.as_ref_unchecked()
+        }
     }
 }
 
