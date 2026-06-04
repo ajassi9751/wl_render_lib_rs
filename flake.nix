@@ -15,9 +15,18 @@
       version = "0.0.0";
       src = ./.;
       cargoLock.lockFile = ./Cargo.lock;
+      nativeBuildInputs = with pkgs64; [
+        pkg-config # Not sure if this an clang are needed
+        clang
+      ];
       buildInputs = with pkgs64; [
         imagemagick
-        pkg-config # Not sure if this an clang are needed
+      ];
+    };
+    devShells.x86_64-linux.default = pkgs64.mkShell {
+      buildInputs = with pkgs64; [
+        imagemagick
+        pkg-config
         clang
       ];
     };
