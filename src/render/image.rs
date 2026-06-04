@@ -1,7 +1,7 @@
 use crate::util::not_null::NotNull;
 use crate::util::units::angle::Angle;
 
-use super::rgba::Argb;
+use super::argb::Argb;
 
 #[allow(unused)]
 pub type Pixels = u32; // Maybe make this usize

@@ -37,7 +37,7 @@ impl <T> NotNull <T> {
 }
 
 #[test]
-fn not_null_none_test () {
+fn none_test () {
     let ptr: Option<NotNull<u8>> = NotNull::try_from(core::ptr::null_mut::<u8>());
     assert!(matches!(ptr, None));
 }

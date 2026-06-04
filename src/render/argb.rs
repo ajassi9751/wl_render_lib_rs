@@ -27,20 +27,20 @@ impl Argb {
 }
 
 #[test]
-fn argb_full_alpha_test () {
+fn full_alpha_test () {
     let pixel = Argb::new(255,1,2,3);
     assert_eq!(pixel.as_precalculated_alpha(), 4278256131_u32)
 }
 
 #[test]
-fn argb_partial_alpha_test () {
+fn partial_alpha_test () {
     let pixel = Argb::new(128,1,1,1);
     assert_eq!(pixel.as_precalculated_alpha(), 2147549441_u32)
 }
 
 // This test is preety useless
 #[test]
-fn argb_partialeq_default_test () {
+fn partialeq_default_test () {
     let r1 = Argb::default();
     let r2 = Argb { r: 0, g: 0, b:0, a: 0 };
     assert_eq!(r1, r2);

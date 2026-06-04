@@ -1,3 +1,3 @@
 pub mod image;
 
-pub mod rgba;
+pub mod argb;
