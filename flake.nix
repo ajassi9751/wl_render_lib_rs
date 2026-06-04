@@ -17,7 +17,7 @@
       cargoLock.lockFile = ./Cargo.lock;
       nativeBuildInputs = with pkgs64; [
         pkg-config # Not sure if this an clang are needed
-        clang
+        libclang
       ];
       buildInputs = with pkgs64; [
         imagemagick
@@ -27,7 +27,7 @@
       buildInputs = with pkgs64; [
         imagemagick
         pkg-config
-        clang
+        libclang
       ];
     };
   };
