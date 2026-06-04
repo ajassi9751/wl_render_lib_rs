@@ -19,7 +19,6 @@ pub struct Image {
 impl Image {
     pub fn new (ptr: NotNull<u8>, width: Pixels, height: Pixels) -> Self {
         Self {
-            // This is probably a really bad way to do this
             data: vec![Argb::default(); height as usize],
             ptr: ptr,
             width: width,
