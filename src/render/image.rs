@@ -37,7 +37,7 @@ impl Image {
 }
 
 pub trait ImageBackend {
-    fn parse_rgb(&mut self, path: &str, data: &mut Vec<Argb>) -> std::io::Result<()>;
+    fn parse_rgb(path: &str, data: &mut Vec<Argb>) -> std::io::Result<()>;
 }
 
 // Simmilar to a swerve request in ctre, represents an object that stores rotations and such that are requested for an image
