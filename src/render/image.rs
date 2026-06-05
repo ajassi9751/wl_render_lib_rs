@@ -3,6 +3,8 @@ use crate::util::units::angle::Angle;
 
 use super::argb::Argb;
 
+use std::path::Path;
+
 #[allow(unused)]
 pub type Pixels = u32; // Maybe make this usize
 
@@ -10,7 +12,7 @@ pub type Pixels = u32; // Maybe make this usize
 // Can be rotated
 #[derive(Debug)]
 pub struct Image {
-    data: Vec<Argb>, // Contains unprocessed Rgbas
+    data: Vec<Argb>, // Contains raw Rgbas
     ptr: NotNull<u8>,
     width: Pixels,
     height: Pixels,
@@ -35,7 +37,7 @@ impl Image {
 }
 
 pub trait ImageBackend {
-    fn parse_rgb(&mut self, path: &str, data: &mut Vec<Argb>) {}
+    fn parse_rgb(&mut self, path: &str, data: &mut Vec<Argb>) -> std::io::Result<()>;
 }
 
 // Simmilar to a swerve request in ctre, represents an object that stores rotations and such that are requested for an image
