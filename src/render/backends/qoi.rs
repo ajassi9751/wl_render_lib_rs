@@ -15,18 +15,9 @@ enum Tag {
     RUN,
 }
 
-pub struct Qoi {
-    pix_array: [Argb; 64],
-    prev_pix: Argb,
-}
+pub struct Qoi;
 
 impl Qoi {
-    pub fn new() -> Self {
-        Self {
-            pix_array: [Argb::default(); 64], // This is very efficient, I like i, I barely get to use regular arrays in rust
-            prev_pix: Argb::new(0, 0, 0, 255), // Not sure if a needs to b 255
-        }
-    }
     fn get_index(pixel: &Argb) -> usize {
         (pixel.r as usize * 3 + pixel.g as usize * 5 + pixel.b as usize * 7 + pixel.a as usize * 11)
             % 64
@@ -38,7 +29,7 @@ impl ImageBackend for Qoi {
     fn parse_rgb(path: &str, data: &mut Vec<Argb>) -> std::io::Result<()> {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
-        let mut pixel_array: [Argb; 64] = [Argb::new(0, 0, 0, 255); 64];
+        let mut pixel_array: [Argb; 64] = [Argb::new(0, 0, 0, 255); 64]; // Probably inefficient
         let mut byte_store: [u8; 14] = [0_u8; 14];
         // Will have to make some way to use this
         let mut _width: u32 = 0;
