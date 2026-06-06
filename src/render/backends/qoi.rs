@@ -34,7 +34,7 @@ impl ImageBackend for Qoi {
         // Will have to make some way to use this
         let mut _width: u32 = 0;
         let mut _height: u32 = 0;
-        let mut isRgba: bool;
+        let mut _isRgba: bool;
         let mut _colorspace: u8;
         let mut tag: Tag;
         let mut prev_pixel: Argb = Argb::default();
@@ -64,8 +64,8 @@ impl ImageBackend for Qoi {
                 for (i, num) in byte_store[8..11].into_iter().enumerate() {
                     _height |= (*num as u32) << (8 * (3 - i));
                 }
-                isRgba = byte_store[12] == 4; // No clue about this warning
-                _colorspace = byte_store[13]; // Why is there a warning!!!
+                _isRgba = byte_store[12] == 4; // No clue about this warning
+                _colorspace = byte_store[13];
             }
             if store_bytes.0 == 0 {
                 let bits: u8 = byte >> 6; // Gives us the first two bits of the byte
@@ -83,14 +83,20 @@ impl ImageBackend for Qoi {
                     0x01..=0x3F => {
                         tag = Tag::INDEX;
                         store_bytes = (0, 0);
-                        current_pixel = pixel_array[(15 & byte) as usize]
-                    } // This range may be wrong, also the & removes the first two bits
+                        current_pixel = pixel_array[(15 & byte) as usize];  // This range may be wrong, also the & removes the first two bits
+                        pixel_array[Self::get_index(&current_pixel)] = current_pixel;
+                        prev_pixel = current_pixel;
+                        data.push(current_pixel);
+                    }
                     0x40 => {
                         tag = Tag::DIFF; // Relies on wrap around arithmetic so it may not work in debug
                         let rval = prev_pixel.r + (bits >> 4); // No need to & her because shifting by 4 removes it
                         let gval = prev_pixel.g + (3 & (bits >> 2)); // 3 is 000011 so it with & it only preserves th first 3 bits
                         let bval = prev_pixel.b + (3 & bits);
                         current_pixel = Argb::new(prev_pixel.a, rval, gval, bval);
+                        pixel_array[Self::get_index(&current_pixel)] = current_pixel;
+                        prev_pixel = current_pixel;
+                        data.push(current_pixel);
                     }
                     0x80 => {
                         tag = Tag::LUMA;
@@ -104,6 +110,9 @@ impl ImageBackend for Qoi {
                         for _ in 0..times {
                             data.push(prev_pixel.clone());
                         }
+                        pixel_array[Self::get_index(&current_pixel)] = current_pixel;
+                        prev_pixel = current_pixel;
+                        data.push(current_pixel);
                     }
                     _ => {
                         return Err(std::io::Error::new(
@@ -118,10 +127,9 @@ impl ImageBackend for Qoi {
                 continue;
             }
             // Implement the rest of the operations
-            // Definitley needs a condition
-            pixel_array[Self::get_index(&current_pixel)] = current_pixel;
-            prev_pixel = current_pixel;
-            data.push(current_pixel) // Seems wrong
+            if store_bytes.0 == 0 {
+
+            }
         }
         Ok(())
     }
