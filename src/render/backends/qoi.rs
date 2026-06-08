@@ -70,7 +70,7 @@ impl ImageBackend for Qoi {
             }
             // Check for end condition and break, this could be optimized
             tail[i % 8] = byte;
-            if i >= 8 && tail == [0,0,0,0,0,0,0,1] {
+            if i >= 8 && tail == [0, 0, 0, 0, 0, 0, 0, 1] {
                 break;
             }
             if store_bytes.0 == 0 {
@@ -89,7 +89,7 @@ impl ImageBackend for Qoi {
                     0x01..=0x3F => {
                         tag = Tag::INDEX;
                         store_bytes = (0, 0);
-                        current_pixel = pixel_array[(15 & byte) as usize];  // This range may be wrong, also the & removes the first two bits
+                        current_pixel = pixel_array[(15 & byte) as usize]; // This range may be wrong, also the & removes the first two bits
                         pixel_array[Self::get_index(&current_pixel)] = current_pixel;
                         prev_pixel = current_pixel;
                         data.push(current_pixel);
@@ -139,14 +139,16 @@ impl ImageBackend for Qoi {
             if store_bytes.0 == 0 && store_bytes.1 != 0 {
                 match tag {
                     Tag::RGBA => {
-                        current_pixel = Argb::new(prev_pixel.a, byte_store[0], byte_store[1], byte_store[2]);
+                        current_pixel =
+                            Argb::new(prev_pixel.a, byte_store[0], byte_store[1], byte_store[2]);
                         store_bytes = (0, 0);
                         pixel_array[Self::get_index(&current_pixel)] = current_pixel;
                         prev_pixel = current_pixel;
                         data.push(current_pixel);
                     }
                     Tag::RGB => {
-                        current_pixel = Argb::new(byte_store[0], byte_store[1], byte_store[2], byte_store[3]);
+                        current_pixel =
+                            Argb::new(byte_store[0], byte_store[1], byte_store[2], byte_store[3]);
                         store_bytes = (0, 0);
                         pixel_array[Self::get_index(&current_pixel)] = current_pixel;
                         prev_pixel = current_pixel;
@@ -156,13 +158,20 @@ impl ImageBackend for Qoi {
                         let gdelta: u8 = tag_byte - 32;
                         let rdelta: u8 = ((byte_store[0] & 15) - 8) + gdelta;
                         let bdelta: u8 = ((byte_store[0] & 240) - 8) + gdelta;
-                        current_pixel = Argb::new(prev_pixel.a, prev_pixel.r + rdelta, prev_pixel.g + gdelta, prev_pixel.b + bdelta);
+                        current_pixel = Argb::new(
+                            prev_pixel.a,
+                            prev_pixel.r + rdelta,
+                            prev_pixel.g + gdelta,
+                            prev_pixel.b + bdelta,
+                        );
                         store_bytes = (0, 0);
                         pixel_array[Self::get_index(&current_pixel)] = current_pixel;
                         prev_pixel = current_pixel;
                         data.push(current_pixel);
                     }
-                    _ => {panic!("Invalid tag state")} // Panics because this can only be a programming error not invalid data
+                    _ => {
+                        panic!("Invalid tag state")
+                    } // Panics because this can only be a programming error not invalid data
                 }
             }
         }
@@ -171,7 +180,7 @@ impl ImageBackend for Qoi {
 }
 
 #[test]
-fn img_test () {
+fn img_test() {
     let mut rgb: Vec<Argb> = Vec::new();
     Qoi::parse_rgb("qoi_test_images/dice.qoi", &mut rgb).unwrap();
     rgb.shrink_to_fit(); // Vec doesn't need to grow anymore

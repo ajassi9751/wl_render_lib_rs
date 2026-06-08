@@ -11,19 +11,17 @@ impl Deref for BitValue {
     }
 }
 
-pub struct Byte_view <'a> {
-    data: &'a u8
+pub struct Byte_view<'a> {
+    data: &'a u8,
 }
 
-impl <'a> Byte_view <'a> {
-    pub fn new (data: &'a u8) -> Self {
-        Self {
-            data: data
-        }
+impl<'a> Byte_view<'a> {
+    pub fn new(data: &'a u8) -> Self {
+        Self { data: data }
     }
 }
 
-impl <'a> Deref for Byte_view <'a> {
+impl<'a> Deref for Byte_view<'a> {
     type Target = u8;
     fn deref(&self) -> &Self::Target {
         self.data
@@ -31,9 +29,9 @@ impl <'a> Deref for Byte_view <'a> {
 }
 
 /// Index with Range<usize> to extract bits using [start..end] syntax
-impl <'a> Index<Range<usize>> for Byte_view <'a> {
+impl<'a> Index<Range<usize>> for Byte_view<'a> {
     type Output = BitValue;
-    
+
     fn index(&self, range: Range<usize>) -> &Self::Output {
         let shift = range.start as u8;
         let width = (range.end - range.start) as u8;
@@ -44,7 +42,7 @@ impl <'a> Index<Range<usize>> for Byte_view <'a> {
 }
 
 #[test]
-fn index_test () {
+fn index_test() {
     let byte = 2_u8;
     let bits = Byte_view::new(&byte);
     let obits = bits[0..1];
