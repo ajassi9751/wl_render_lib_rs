@@ -5,3 +5,5 @@ edition = "2024"
 
 [dependencies]
 
+[profile.dev]
+overflow-checks = false # Wrap around arithmetic is needed for decoding qoi files

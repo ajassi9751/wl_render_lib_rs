@@ -1,2 +1,4 @@
 target/
 result
+qoi_test_images/
+# https://qoiformat.org/qoi_test_images.zip

@@ -31,16 +31,17 @@ impl ImageBackend for Qoi {
         let reader = BufReader::new(file);
         let mut pixel_array: [Argb; 64] = [Argb::new(0, 0, 0, 255); 64]; // Probably inefficient
         let mut byte_store: [u8; 14] = [0_u8; 14];
-        // Will have to make some way to use this
+        // Will have to make some way to use this, could use this to reserve vec size
         let mut _width: u32 = 0;
         let mut _height: u32 = 0;
-        let mut _isRgba: bool;
+        let mut _is_rgba: bool;
         let mut _colorspace: u8;
         let mut tag: Tag;
         let mut prev_pixel: Argb = Argb::default();
-        let mut current_pixel: Argb = Argb::default();
+        let mut current_pixel: Argb;
         let mut store_bytes: (u8, u8) = (0, 0); // (Amount left, total)
         let mut tag_byte: u8 = 0_u8;
+        let mut tail = [0_u8; 8];
         for (i, byte_result) in reader.bytes().into_iter().enumerate() {
             let byte = byte_result?;
             if i < 14 {
@@ -48,7 +49,7 @@ impl ImageBackend for Qoi {
                 continue;
             }
             if i == 14 {
-                let validator = match std::str::from_utf8(byte_store[0..3].into()) {
+                let validator = match std::str::from_utf8(byte_store[0..4].into()) {
                     Ok(s) => s,
                     Err(e) => return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, e)),
                 };
@@ -58,18 +59,18 @@ impl ImageBackend for Qoi {
                         "Not a qoif file",
                     ));
                 }
-                for (i, num) in byte_store[4..7].into_iter().enumerate() {
+                for (i, num) in byte_store[5..8].into_iter().enumerate() {
                     _width |= (*num as u32) << (8 * (3 - i)); // Should make this a function and make a test for it
                 }
-                for (i, num) in byte_store[8..11].into_iter().enumerate() {
+                for (i, num) in byte_store[7..12].into_iter().enumerate() {
                     _height |= (*num as u32) << (8 * (3 - i));
                 }
-                _isRgba = byte_store[12] == 4; // No clue about this warning
+                _is_rgba = byte_store[12] == 4;
                 _colorspace = byte_store[13];
             }
-            // Check for end condition and break, this code sucks
-            let term_temp: Vec<u8> = File::open(path)?.bytes().into_iter().collect::<Result<Vec<u8>, _>>()?;
-            if vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01] == term_temp {
+            // Check for end condition and break, this could be optimized
+            tail[i % 8] = byte;
+            if i >= 8 && tail == [0,0,0,0,0,0,0,1] {
                 break;
             }
             if store_bytes.0 == 0 {
@@ -135,7 +136,7 @@ impl ImageBackend for Qoi {
                 continue; // Not really needed
             }
             // Implement the rest of the operations
-            if store_bytes.0 == 0 {
+            if store_bytes.0 == 0 && store_bytes.1 != 0 {
                 match tag {
                     Tag::RGBA => {
                         current_pixel = Argb::new(prev_pixel.a, byte_store[0], byte_store[1], byte_store[2]);
@@ -161,10 +162,17 @@ impl ImageBackend for Qoi {
                         prev_pixel = current_pixel;
                         data.push(current_pixel);
                     }
-                    _ => {panic!("Invalid tag state")}
+                    _ => {panic!("Invalid tag state")} // Panics because this can only be a programming error not invalid data
                 }
             }
         }
         Ok(())
     }
+}
+
+#[test]
+fn img_test () {
+    let mut rgb: Vec<Argb> = Vec::new();
+    Qoi::parse_rgb("qoi_test_images/dice.qoi", &mut rgb).unwrap();
+    rgb.shrink_to_fit(); // Vec doesn't need to grow anymore
 }
