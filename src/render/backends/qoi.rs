@@ -67,6 +67,11 @@ impl ImageBackend for Qoi {
                 _isRgba = byte_store[12] == 4; // No clue about this warning
                 _colorspace = byte_store[13];
             }
+            // Check for end condition and break, this code sucks
+            let term_temp: Vec<u8> = File::open(path)?.bytes().into_iter().collect::<Result<Vec<u8>, _>>()?;
+            if vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01] == term_temp {
+                break;
+            }
             if store_bytes.0 == 0 {
                 let bits: u8 = byte >> 6; // Gives us the first two bits of the byte
                 match bits {
@@ -90,6 +95,7 @@ impl ImageBackend for Qoi {
                     }
                     0x40 => {
                         tag = Tag::DIFF; // Relies on wrap around arithmetic so it may not work in debug
+                        store_bytes = (0, 0);
                         let rval = prev_pixel.r + (bits >> 4); // No need to & her because shifting by 4 removes it
                         let gval = prev_pixel.g + (3 & (bits >> 2)); // 3 is 000011 so it with & it only preserves th first 3 bits
                         let bval = prev_pixel.b + (3 & bits);
@@ -105,6 +111,7 @@ impl ImageBackend for Qoi {
                     }
                     0x00 => {
                         tag = Tag::RUN;
+                        store_bytes = (0, 0);
                         let times = (15 & byte) + 1;
                         current_pixel = prev_pixel;
                         for _ in 0..times {
@@ -124,11 +131,38 @@ impl ImageBackend for Qoi {
                 byte_store = [0_u8; 14]; // Reset the array
             } else {
                 byte_store[(store_bytes.1 as usize) - (store_bytes.0 as usize)] = byte;
-                continue;
+                store_bytes.0 -= 1;
+                continue; // Not really needed
             }
             // Implement the rest of the operations
             if store_bytes.0 == 0 {
-
+                match tag {
+                    Tag::RGBA => {
+                        current_pixel = Argb::new(prev_pixel.a, byte_store[0], byte_store[1], byte_store[2]);
+                        store_bytes = (0, 0);
+                        pixel_array[Self::get_index(&current_pixel)] = current_pixel;
+                        prev_pixel = current_pixel;
+                        data.push(current_pixel);
+                    }
+                    Tag::RGB => {
+                        current_pixel = Argb::new(byte_store[0], byte_store[1], byte_store[2], byte_store[3]);
+                        store_bytes = (0, 0);
+                        pixel_array[Self::get_index(&current_pixel)] = current_pixel;
+                        prev_pixel = current_pixel;
+                        data.push(current_pixel);
+                    }
+                    Tag::LUMA => {
+                        let gdelta: u8 = tag_byte - 32;
+                        let rdelta: u8 = ((byte_store[0] & 15) - 8) + gdelta;
+                        let bdelta: u8 = ((byte_store[0] & 240) - 8) + gdelta;
+                        current_pixel = Argb::new(prev_pixel.a, prev_pixel.r + rdelta, prev_pixel.g + gdelta, prev_pixel.b + bdelta);
+                        store_bytes = (0, 0);
+                        pixel_array[Self::get_index(&current_pixel)] = current_pixel;
+                        prev_pixel = current_pixel;
+                        data.push(current_pixel);
+                    }
+                    _ => {panic!("Invalid tag state")}
+                }
             }
         }
         Ok(())
