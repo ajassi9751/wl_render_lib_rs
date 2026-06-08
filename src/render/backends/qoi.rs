@@ -29,7 +29,7 @@ impl ImageBackend for Qoi {
     fn parse_rgb(path: &str, data: &mut Vec<Argb>) -> std::io::Result<()> {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
-        let mut pixel_array: [Argb; 64] = [Argb::new(255, 0, 0, 0); 64]; // Probably inefficient
+        let mut pixel_array: [Argb; 64] = [Argb::default(); 64]; // Probably inefficient
         let mut byte_store: [u8; 14] = [0_u8; 14];
         // Will have to make some way to use this, could use this to reserve vec size
         let mut _width: u32 = 0;
