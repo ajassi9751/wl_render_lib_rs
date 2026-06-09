@@ -15,7 +15,8 @@ impl Qoi {
 
 // Honestly should just be a function pointer
 impl ImageBackend for Qoi {
-    fn parse_rgb(path: &str, data: &mut Vec<Argb>) -> std::io::Result<()> { // Should probably just return the vec instead of a reference
+    fn parse_rgb(path: &str) -> std::io::Result<Vec<Argb>> { // Should probably just return the vec instead of a reference
+        let mut data: Vec<Argb> = Vec::new();
         // Read entire file into memory for simpler parsing
         let bytes = std::fs::read(path)?;
         if bytes.len() < 14 + 8 {
@@ -148,13 +149,12 @@ impl ImageBackend for Qoi {
                 _ => unreachable!(), // Shouldn't be possible to reach
             }
         }
-        Ok(())
+        Ok(data)
     }
 }
 
 #[test]
 fn img_test() {
-    let mut rgb: Vec<Argb> = Vec::new();
-    Qoi::parse_rgb("qoi_test_images/qoi_logo.qoi", &mut rgb).unwrap(); // Relies on the filesystem, bad test, I know
+    let mut rgb: Vec<Argb> = Qoi::parse_rgb("qoi_test_images/qoi_logo.qoi").unwrap(); // Relies on the filesystem, bad test, I know
     rgb.shrink_to_fit(); // Vec doesn't need to grow anymore
 }
