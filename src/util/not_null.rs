@@ -13,19 +13,21 @@ impl<T> NotNull<T> {
             Some(Self { ptr: ptr })
         }
     }
-    // Could be accesed without &mut self but that seems a bit unsafe
+    // Could be acessed without &mut self but that seems a bit unsafe
     pub fn get_mut(&mut self) -> *mut T {
         self.ptr
     }
     pub fn get(&self) -> *const T {
         self.ptr
     }
-    // Also could be accesed without &mut self but that seems a bit unsafe too
+    // Also could be acessed without &mut self but that seems a bit unsafe too
     pub fn as_mut(&mut self) -> &mut T {
-        unsafe { self.ptr.as_mut_unchecked() }
+        // unsafe { self.ptr.as_mut_unchecked() }
+        unsafe { self.ptr.as_mut().unwrap() } // The prior is preferred but in nixpkgs rust, this is an unstable api
     }
     pub fn as_ref(&self) -> &T {
-        unsafe { self.ptr.as_ref_unchecked() }
+        // unsafe { self.ptr.as_ref_unchecked() }
+        unsafe { self.ptr.as_ref().unwrap() } // The prior is preferred but in nixpkgs rust, this is an unstable api
     }
 }
 
