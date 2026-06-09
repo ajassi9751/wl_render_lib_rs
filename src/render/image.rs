@@ -3,8 +3,6 @@ use crate::util::units::angle::Angle;
 
 use super::argb::Argb;
 
-use std::path::Path;
-
 #[allow(unused)]
 pub type Pixels = u32; // Maybe make this usize
 
@@ -13,7 +11,7 @@ pub type Pixels = u32; // Maybe make this usize
 #[derive(Debug)]
 pub struct Image {
     data: Vec<Argb>, // Think of this Vec as a coordinate plane only in the first quadrant, the image is encoded from top left to bottom right but coordinates are accesed as if in a regular first quadrant coordinate plane
-    ptr: NotNull<u8>,
+    ptr: NotNull<u8>, // Pointer that will be written to, maybe should be a slice to be more explicit about size?
     width: Pixels,
     height: Pixels,
 }
@@ -43,7 +41,7 @@ impl Image {
 }
 
 pub trait ImageBackend {
-    fn parse_rgb(path: &str) -> std::io::Result<Vec<Argb>>;
+    fn parse_rgb(path: &str) -> std::io::Result<Vec<Argb>>; // I would rather not use &str to represent a path but std::path::Path doesn't work well
 }
 
 // Simmilar to a swerve request in ctre, represents an object that stores rotations and such that are requested for an image
@@ -75,7 +73,7 @@ impl ImageRequest {
 pub type PixelCoordinate = (Pixels, Pixels); // Tuple of pixels, X and Y respectively
 
 // Enum that represents an action that can be done to an image
-#[non_exhaustive]
+#[non_exhaustive] // More can be added in the future
 #[derive(Debug, PartialEq, Eq)]
 pub enum ImageAction {
     Rotate(Angle),
