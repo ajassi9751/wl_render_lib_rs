@@ -18,8 +18,18 @@
     };
     devShells.x86_64-linux.default = pkgs64.mkShell {
       buildInputs = with pkgs64; [
+        curl
+        unzip
         cargo
       ];
+      shellHook = ''
+        # Get test images
+        if [ ! -d "qoi_test_images" ]; then
+          curl -o img.zip https://qoiformat.org/qoi_test_images.zip
+          unzip img.zip
+          rm img.zip
+        fi
+      '';
     };
   };
 }
