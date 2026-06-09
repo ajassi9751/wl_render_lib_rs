@@ -2,8 +2,7 @@
 use crate::render::argb::Argb;
 use crate::render::image::ImageBackend;
 
-// Stores options for the tags of the qoi file
-// Tag enum removed; parsing implemented directly in parse_rgb
+// Tag enum removed, parsing is now implemented directly in parse_rgb :(
 
 pub struct Qoi;
 
@@ -16,7 +15,7 @@ impl Qoi {
 
 // Honestly should just be a function pointer
 impl ImageBackend for Qoi {
-    fn parse_rgb(path: &str, data: &mut Vec<Argb>) -> std::io::Result<()> {
+    fn parse_rgb(path: &str, data: &mut Vec<Argb>) -> std::io::Result<()> { // Should probably just return the vec instead of a reference
         // Read entire file into memory for simpler parsing
         let bytes = std::fs::read(path)?;
         if bytes.len() < 14 + 8 {
@@ -27,7 +26,7 @@ impl ImageBackend for Qoi {
         }
 
         // Header
-        if &bytes[0..4] != b"qoif" {
+        if &bytes[0..4] != b"qoif" { // b"" means that it is a byte string
             return Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Not a qoi file",
@@ -42,7 +41,7 @@ impl ImageBackend for Qoi {
             | ((bytes[9] as u32) << 16)
             | ((bytes[10] as u32) << 8)
             | (bytes[11] as u32);
-        let _channels = bytes[12]; // 3 = RGB, 4 = RGBA
+        let _channels = bytes[12]; // 3 = RGB, 4 = RGBA, we ignore this
         let _colorspace = bytes[13]; // Ngl I have no clue what this is
 
         let mut pixel_array: [Argb; 64] = [Argb::default(); 64];
@@ -156,6 +155,6 @@ impl ImageBackend for Qoi {
 #[test]
 fn img_test() {
     let mut rgb: Vec<Argb> = Vec::new();
-    Qoi::parse_rgb("qoi_test_images/qoi_logo.qoi", &mut rgb).unwrap();
+    Qoi::parse_rgb("qoi_test_images/qoi_logo.qoi", &mut rgb).unwrap(); // Relies on the filesystem, bad test, I know
     rgb.shrink_to_fit(); // Vec doesn't need to grow anymore
 }
