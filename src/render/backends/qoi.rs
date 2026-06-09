@@ -2,18 +2,8 @@
 use crate::render::argb::Argb;
 use crate::render::image::ImageBackend;
 
-use std::fs::File;
-use std::io::{BufReader, Read};
-
 // Stores options for the tags of the qoi file
-enum Tag {
-    RGB,
-    RGBA,
-    INDEX,
-    DIFF,
-    LUMA,
-    RUN,
-}
+// Tag enum removed; parsing implemented directly in parse_rgb
 
 pub struct Qoi;
 
@@ -27,152 +17,136 @@ impl Qoi {
 // Honestly should just be a function pointer
 impl ImageBackend for Qoi {
     fn parse_rgb(path: &str, data: &mut Vec<Argb>) -> std::io::Result<()> {
-        let file = File::open(path)?;
-        let reader = BufReader::new(file);
-        let mut pixel_array: [Argb; 64] = [Argb::default(); 64]; // Probably inefficient
-        let mut byte_store: [u8; 14] = [0_u8; 14];
-        // Will have to make some way to use this, could use this to reserve vec size
-        let mut _width: u32 = 0;
-        let mut _height: u32 = 0;
-        let mut _is_rgba: bool;
-        let mut _colorspace: u8;
-        let mut tag: Tag;
-        let mut prev_pixel: Argb = Argb::default();
-        let mut current_pixel: Argb;
-        let mut store_bytes: (u8, u8) = (0, 0); // (Amount left, total)
-        let mut tag_byte: u8 = 0_u8;
-        let mut tail = [0_u8; 8];
-        for (i, byte_result) in reader.bytes().into_iter().enumerate() {
-            let byte = byte_result?;
-            if i < 14 {
-                byte_store[i] = byte;
-                continue;
-            }
-            if i == 14 {
-                let validator = match std::str::from_utf8(byte_store[0..4].into()) {
-                    Ok(s) => s,
-                    Err(e) => return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, e)),
-                };
-                if validator != "qoif" {
+        // Read entire file into memory for simpler parsing
+        let bytes = std::fs::read(path)?;
+        if bytes.len() < 14 + 8 {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "File too small to be a qoi image",
+            ));
+        }
+
+        // Header
+        if &bytes[0..4] != b"qoif" {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Not a qoi file",
+            ));
+        }
+        // Find a way to use these, possibly with reserving the vec dimensions
+        let _width = ((bytes[4] as u32) << 24)
+            | ((bytes[5] as u32) << 16)
+            | ((bytes[6] as u32) << 8)
+            | (bytes[7] as u32);
+        let _height = ((bytes[8] as u32) << 24)
+            | ((bytes[9] as u32) << 16)
+            | ((bytes[10] as u32) << 8)
+            | (bytes[11] as u32);
+        let _channels = bytes[12]; // 3 = RGB, 4 = RGBA
+        let _colorspace = bytes[13]; // Ngl I have no clue what this is
+
+        let mut pixel_array: [Argb; 64] = [Argb::default(); 64];
+        // QOI spec starts with previous pixel = (r=0,g=0,b=0,a=255)
+        let mut prev_pixel = Argb::new(255, 0, 0, 0);
+
+        let mut pos: usize = 14;
+        // Stop before the 8-byte end marker
+        let end_marker_pos = bytes.len().saturating_sub(8);
+
+        while pos < end_marker_pos {
+            let b = bytes[pos];
+            pos += 1;
+
+            if b == 0xFE {
+                // OP_RGB: next 3 bytes r,g,b (alpha unchanged)
+                if pos + 3 > end_marker_pos + 8 {
                     return Err(std::io::Error::new(
-                        std::io::ErrorKind::InvalidData,
-                        "Not a qoif file",
+                        std::io::ErrorKind::UnexpectedEof,
+                        "Unexpected EOF in OP_RGB",
                     ));
                 }
-                for (i, num) in byte_store[5..8].into_iter().enumerate() {
-                    _width |= (*num as u32) << (8 * (3 - i)); // Should make this a function and make a test for it
-                }
-                for (i, num) in byte_store[7..12].into_iter().enumerate() {
-                    _height |= (*num as u32) << (8 * (3 - i));
-                }
-                _is_rgba = byte_store[12] == 4;
-                _colorspace = byte_store[13];
+                let r = bytes[pos];
+                let g = bytes[pos + 1];
+                let bl = bytes[pos + 2];
+                pos += 3;
+                let current = Argb::new(prev_pixel.a, r, g, bl);
+                pixel_array[Self::get_index(&current)] = current;
+                data.push(current);
+                prev_pixel = current;
+                continue;
             }
-            // Check for end condition and break, this could be optimized
-            tail[i % 8] = byte;
-            if i >= 8 && tail == [0, 0, 0, 0, 0, 0, 0, 1] {
-                break;
+            if b == 0xFF {
+                // OP_RGBA: next 4 bytes r,g,b,a
+                if pos + 4 > end_marker_pos + 8 {
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::UnexpectedEof,
+                        "Unexpected EOF in OP_RGBA",
+                    ));
+                }
+                let r = bytes[pos];
+                let g = bytes[pos + 1];
+                let bl = bytes[pos + 2];
+                let a = bytes[pos + 3];
+                pos += 4;
+                let current = Argb::new(a, r, g, bl);
+                pixel_array[Self::get_index(&current)] = current;
+                data.push(current);
+                prev_pixel = current;
+                continue;
             }
-            if store_bytes.0 == 0 {
-                let bits: u8 = byte >> 6; // Gives us the first two bits of the byte
-                match bits {
-                    0xFF => {
-                        tag = Tag::RGBA;
-                        store_bytes = (4, 4);
-                        tag_byte = byte;
-                    }
-                    0xFE => {
-                        tag = Tag::RGB;
-                        store_bytes = (3, 3);
-                        tag_byte = byte;
-                    }
-                    0x01..=0x3F => {
-                        tag = Tag::INDEX;
-                        store_bytes = (0, 0);
-                        current_pixel = pixel_array[(15 & byte) as usize]; // This range may be wrong, also the & removes the first two bits
-                        pixel_array[Self::get_index(&current_pixel)] = current_pixel;
-                        prev_pixel = current_pixel;
-                        data.push(current_pixel);
-                    }
-                    0x40 => {
-                        tag = Tag::DIFF; // Relies on wrap around arithmetic so it may not work in debug
-                        store_bytes = (0, 0);
-                        let rval = prev_pixel.r + (bits >> 4); // No need to & her because shifting by 4 removes it
-                        let gval = prev_pixel.g + (3 & (bits >> 2)); // 3 is 000011 so it with & it only preserves th first 3 bits
-                        let bval = prev_pixel.b + (3 & bits);
-                        current_pixel = Argb::new(prev_pixel.a, rval, gval, bval);
-                        pixel_array[Self::get_index(&current_pixel)] = current_pixel;
-                        prev_pixel = current_pixel;
-                        data.push(current_pixel);
-                    }
-                    0x80 => {
-                        tag = Tag::LUMA;
-                        store_bytes = (1, 1);
-                        tag_byte = byte;
-                    }
-                    0x00 => {
-                        tag = Tag::RUN;
-                        store_bytes = (0, 0);
-                        let times = (15 & byte) + 1;
-                        current_pixel = prev_pixel;
-                        for _ in 0..times {
-                            data.push(prev_pixel.clone());
-                        }
-                        pixel_array[Self::get_index(&current_pixel)] = current_pixel;
-                        prev_pixel = current_pixel;
-                        data.push(current_pixel);
-                    }
-                    _ => {
+
+            match b >> 6 {
+                0b00 => {
+                    // QOI_OP_INDEX: lower 6 bits
+                    let idx = (b & 0x3F) as usize;
+                    let current = pixel_array[idx];
+                    data.push(current);
+                    prev_pixel = current;
+                }
+                0b01 => {
+                    // QOI_OP_DIFF: 2-bit diffs with bias 2
+                    let dr = ((b >> 4) & 0x03) as i16 - 2;
+                    let dg = ((b >> 2) & 0x03) as i16 - 2;
+                    let db = (b & 0x03) as i16 - 2;
+                    let r = (prev_pixel.r as i16 + dr) as u8;
+                    let g = (prev_pixel.g as i16 + dg) as u8;
+                    let bl = (prev_pixel.b as i16 + db) as u8;
+                    let current = Argb::new(prev_pixel.a, r, g, bl);
+                    pixel_array[Self::get_index(&current)] = current;
+                    data.push(current);
+                    prev_pixel = current;
+                }
+                0b10 => {
+                    // QOI_OP_LUMA: 6-bit dg (bias 32) then one byte with dr_dg and db_dg (4 bits each, bias 8)
+                    if pos >= end_marker_pos + 8 {
                         return Err(std::io::Error::new(
-                            std::io::ErrorKind::InvalidData,
-                            "Invalid Tag bit",
-                        ))
+                            std::io::ErrorKind::UnexpectedEof,
+                            "Unexpected EOF in OP_LUMA",
+                        ));
+                    }
+                    let b2 = bytes[pos];
+                    pos += 1;
+                    let dg = (b & 0x3F) as i16 - 32;
+                    let dr_dg = ((b2 >> 4) & 0x0F) as i16 - 8;
+                    let db_dg = (b2 & 0x0F) as i16 - 8;
+                    let dr = dr_dg + dg;
+                    let db = db_dg + dg;
+                    let r = (prev_pixel.r as i16 + dr) as u8;
+                    let g = (prev_pixel.g as i16 + dg) as u8;
+                    let bl = (prev_pixel.b as i16 + db) as u8;
+                    let current = Argb::new(prev_pixel.a, r, g, bl);
+                    pixel_array[Self::get_index(&current)] = current;
+                    data.push(current);
+                    prev_pixel = current;
+                }
+                0b11 => {
+                    // QOI_OP_RUN: lower 6 bits + 1
+                    let run = (b & 0x3F) as usize + 1;
+                    for _ in 0..run {
+                        data.push(prev_pixel);
                     }
                 }
-                byte_store = [0_u8; 14]; // Reset the array
-            } else {
-                byte_store[(store_bytes.1 as usize) - (store_bytes.0 as usize)] = byte;
-                store_bytes.0 -= 1;
-                continue; // Not really needed
-            }
-            // Implement the rest of the operations
-            if store_bytes.0 == 0 && store_bytes.1 != 0 {
-                match tag {
-                    Tag::RGBA => {
-                        current_pixel =
-                            Argb::new(prev_pixel.a, byte_store[0], byte_store[1], byte_store[2]);
-                        store_bytes = (0, 0);
-                        pixel_array[Self::get_index(&current_pixel)] = current_pixel;
-                        prev_pixel = current_pixel;
-                        data.push(current_pixel);
-                    }
-                    Tag::RGB => {
-                        current_pixel =
-                            Argb::new(byte_store[0], byte_store[1], byte_store[2], byte_store[3]);
-                        store_bytes = (0, 0);
-                        pixel_array[Self::get_index(&current_pixel)] = current_pixel;
-                        prev_pixel = current_pixel;
-                        data.push(current_pixel);
-                    }
-                    Tag::LUMA => {
-                        let gdelta: u8 = tag_byte - 32;
-                        let rdelta: u8 = ((byte_store[0] & 15) - 8) + gdelta;
-                        let bdelta: u8 = ((byte_store[0] & 240) - 8) + gdelta;
-                        current_pixel = Argb::new(
-                            prev_pixel.a,
-                            prev_pixel.r + rdelta,
-                            prev_pixel.g + gdelta,
-                            prev_pixel.b + bdelta,
-                        );
-                        store_bytes = (0, 0);
-                        pixel_array[Self::get_index(&current_pixel)] = current_pixel;
-                        prev_pixel = current_pixel;
-                        data.push(current_pixel);
-                    }
-                    _ => {
-                        panic!("Invalid tag state")
-                    } // Panics because this can only be a programming error not invalid data
-                }
+                _ => unreachable!(),
             }
         }
         Ok(())
