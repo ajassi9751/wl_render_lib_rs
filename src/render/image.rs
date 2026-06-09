@@ -12,7 +12,7 @@ pub type Pixels = u32; // Maybe make this usize
 // Can be rotated
 #[derive(Debug)]
 pub struct Image {
-    data: Vec<Argb>, // Contains raw Rgbas
+    data: Vec<Argb>, // Think of this Vec as a coordinate plane only in the first quadrant, the image is encoded from top left to bottom right but coordinates are accesed as if in a regular first quadrant coordinate plane
     ptr: NotNull<u8>,
     width: Pixels,
     height: Pixels,
@@ -27,12 +27,18 @@ impl Image {
             height: height,
         }
     }
+    pub fn decode_image <T: ImageBackend> (&mut self, path: &str) -> std::io::Result<()> {
+        T::parse_rgb(path, &mut self.data)?;
+        Ok(())
+    }
     pub fn apply_request(request: &ImageRequest) {}
     fn get_coordinate_mut(&mut self, x: usize, y: usize) -> &mut Argb {
-        &mut self.data[y * self.width as usize + x]
+        let len = self.data.len();
+        &mut self.data[(len - (y * self.width as usize)) + x]
     }
     fn get_coordinate(&self, x: usize, y: usize) -> &Argb {
-        &self.data[y * self.width as usize + x]
+        let len = self.data.len();
+        &self.data[(len - (y * self.width as usize)) + x]
     }
 }
 
