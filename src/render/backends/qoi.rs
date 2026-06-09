@@ -51,7 +51,7 @@ impl ImageBackend for Qoi {
 
         let mut pos: usize = 14;
         // Stop before the 8-byte end marker
-        let end_marker_pos = bytes.len().saturating_sub(8);
+        let end_marker_pos = bytes.len().saturating_sub(8); // Overflow instead of wrapping arithmetic
 
         while pos < end_marker_pos {
             let b = bytes[pos];
@@ -146,7 +146,7 @@ impl ImageBackend for Qoi {
                         data.push(prev_pixel);
                     }
                 }
-                _ => unreachable!(),
+                _ => unreachable!(), // Shouldn't be possible to reach
             }
         }
         Ok(())
@@ -156,6 +156,6 @@ impl ImageBackend for Qoi {
 #[test]
 fn img_test() {
     let mut rgb: Vec<Argb> = Vec::new();
-    Qoi::parse_rgb("qoi_test_images/dice.qoi", &mut rgb).unwrap();
+    Qoi::parse_rgb("qoi_test_images/qoi_logo.qoi", &mut rgb).unwrap();
     rgb.shrink_to_fit(); // Vec doesn't need to grow anymore
 }
