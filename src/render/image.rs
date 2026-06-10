@@ -65,19 +65,6 @@ fn buffer_write_test () {
     println!("{:?}", buffer);
 }
 
-// Test can't fail and doesn't rely on anything so maybe it should be removed
-#[test]
-fn array_ptr_test () {
-    let mut buffer: [u32; 10] = [0_u32; 10];
-    let ptr: *mut u32 = buffer.as_mut_ptr();
-    for i in 0..buffer.len() {
-        unsafe {
-            *ptr.offset(i.try_into().unwrap()) = i as u32;
-        }
-    }
-    println!("{:?}", buffer);
-}
-
 // Simmilar to a swerve request in ctre, represents an object that stores rotations and such that are requested for an image
 #[derive(Debug, PartialEq, Eq)] // New does the same as default so it isn't derived
 pub struct ImageRequest {
