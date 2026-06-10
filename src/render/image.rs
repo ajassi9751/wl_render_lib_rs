@@ -25,6 +25,7 @@ impl Image {
             height: height,
         }
     }
+    // Might make this a standalone function and remove ptr from Image
     pub fn write_to_buffer(&mut self) {
         for i in 0..((self.width/4) * self.height) {
             unsafe {
