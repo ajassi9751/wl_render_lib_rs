@@ -28,7 +28,7 @@ impl Image {
     pub fn write_to_buffer(&mut self) {
         for i in 0..((self.width/4) * self.height) {
             unsafe {
-                *self.ptr.get_mut().offset(i.try_into().unwrap()) = self.data[i as usize].as_precalculated_alpha();
+                *self.ptr.get_mut().offset(i.try_into().expect("Pointer offset failed due to the value not fitting into an isize")) = self.data[i as usize].as_precalculated_alpha();
             }
         }
     }
