@@ -32,9 +32,14 @@ impl Image {
             }
         }
     }
+    // Data shouldn't be mutated so this is for testing
     #[cfg(test)]
     pub fn get_data_mut (&mut self) -> &mut Vec<Argb> {
         &mut self.data
+    }
+    // Data can be borrowed to be written to a buffer or stored by the user because I haven't yet found a safe way to make an api for buffers that doesn't just copy all the info (which is thread unsafe becuase of pointers, it would be great if I could use self to consume the object for the api or use Arc or Rc)
+    pub fn get_data (&self) -> &Vec<Argb> {
+        &self.data
     }
     pub fn decode_image <T: ImageBackend> (&mut self, path: &str) -> std::io::Result<()> {
         self.data = T::parse_rgb(path)?;
