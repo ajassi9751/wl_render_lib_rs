@@ -3,6 +3,8 @@ use crate::util::units::angle::Angle;
 
 use super::argb::Argb;
 
+use std::convert::TryInto;
+
 #[allow(unused)]
 pub type Pixels = u32; // Maybe make this usize
 
@@ -27,22 +29,27 @@ impl Image {
     }
     // Might make this a standalone function and remove ptr from Image
     pub fn write_to_buffer(&mut self) {
-        for i in 0..((self.width/4) * self.height) {
+        for i in 0..((self.width / 4) * self.height) {
             unsafe {
-                *self.ptr.get_mut().offset(i.try_into().expect("Pointer offset failed due to the value not fitting into an isize")) = self.data[i as usize].as_precalculated_alpha();
+                *self
+                    .ptr
+                    .get_mut()
+                    .offset(i.try_into().expect(
+                        "Pointer offset failed due to the value not fitting into an isize",
+                    )) = self.data[i as usize].as_precalculated_alpha();
             }
         }
     }
     // Data shouldn't be mutated so this is for testing
     #[cfg(test)]
-    pub fn get_data_mut (&mut self) -> &mut Vec<Argb> {
+    pub fn get_data_mut(&mut self) -> &mut Vec<Argb> {
         &mut self.data
     }
     // Data can be borrowed to be written to a buffer or stored by the user because I haven't yet found a safe way to make an api for buffers that doesn't just copy all the info (which is thread unsafe becuase of pointers, it would be great if I could use self to consume the object for the api or use Arc or Rc)
-    pub fn get_data (&self) -> &Vec<Argb> {
+    pub fn get_data(&self) -> &Vec<Argb> {
         &self.data
     }
-    pub fn decode_image <T: ImageBackend> (&mut self, path: &str) -> std::io::Result<()> {
+    pub fn decode_image<T: ImageBackend>(&mut self, path: &str) -> std::io::Result<()> {
         self.data = T::parse_rgb(path)?;
         Ok(())
     }
@@ -62,11 +69,11 @@ pub trait ImageBackend {
 }
 
 #[test]
-fn buffer_write_test () {
-    let mut buffer: [u32; (20/4)*2] = [0_u32; (20/4)*2];
+fn buffer_write_test() {
+    let mut buffer: [u32; (20 / 4) * 2] = [0_u32; (20 / 4) * 2];
     let ptr = NotNull::try_from(buffer.as_mut_ptr()).unwrap();
     let mut image = Image::new(ptr, 20, 2);
-    image.get_data_mut().resize(10, Argb::new(1,2,3,4));
+    image.get_data_mut().resize(10, Argb::new(1, 2, 3, 4));
     image.write_to_buffer();
     println!("{:?}", buffer);
 }

@@ -15,7 +15,8 @@ impl Qoi {
 
 // Honestly should just be a function pointer
 impl ImageBackend for Qoi {
-    fn parse_rgb(path: &str) -> std::io::Result<Vec<Argb>> { // Should probably just return the vec instead of a reference
+    fn parse_rgb(path: &str) -> std::io::Result<Vec<Argb>> {
+        // Should probably just return the vec instead of a reference
         let mut data: Vec<Argb> = Vec::new();
         // Read entire file into memory for simpler parsing
         let bytes = std::fs::read(path)?;
@@ -27,7 +28,8 @@ impl ImageBackend for Qoi {
         }
 
         // Header
-        if &bytes[0..4] != b"qoif" { // b"" means that it is a byte string
+        if &bytes[0..4] != b"qoif" {
+            // b"" means that it is a byte string
             return Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Not a qoi file",
