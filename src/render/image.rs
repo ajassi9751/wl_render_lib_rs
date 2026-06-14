@@ -113,4 +113,5 @@ pub enum ImageAction {
     Rotate(Angle),
     Translate(PixelCoordinate),
     Transparency(i32), // Will just add or subtract transparency
+    Resize(u32),
 }
