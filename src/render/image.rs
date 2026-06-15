@@ -3,8 +3,8 @@ use crate::util::units::angle::Angle;
 
 use super::argb::Argb;
 
-use std::convert::TryInto;
 use std::collections::VecDeque;
+use std::convert::TryInto;
 
 #[allow(unused)]
 pub type Pixels = u32; // Maybe make this usize
@@ -47,7 +47,7 @@ impl Image {
         &mut self.data
     }
     pub fn push_data(&self, queue: &mut ImageQueue) {
-        queue.push_back(ImageBuffer::new(self.data.clone(), self.ptr.clone()));
+        queue.push_back(ImageBuffer::from(self.data.clone(), self.ptr.clone()));
     }
     pub fn decode_image<T: ImageBackend>(&mut self, path: &str) -> std::io::Result<()> {
         self.data = T::parse_rgb(path)?;
@@ -65,23 +65,29 @@ impl Image {
 }
 
 pub struct ImageQueue {
-    data: VecDeque<ImageBuffer>
+    data: VecDeque<ImageBuffer>,
+    width: Pixels,
+    height: Pixels,
 }
 
 #[allow(private_interfaces)] // The way the api is made seems wrong but to keep it "thread safe", it is locked behind this struct
 impl ImageQueue {
-    pub fn new () -> Self {
+    pub fn new(width: Pixels, height: Pixels) -> Self {
         Self {
-            data: VecDeque::new()
+            data: VecDeque::new(),
+            width: width,
+            height: height,
         }
     }
     // Method can only be called by things that can see ImageBuffer
-    pub fn push_back (&mut self, data: ImageBuffer) {
+    pub fn push_back(&mut self, data: ImageBuffer) {
         self.data.push_back(data);
     }
     // Method can be used anywhere
-    pub fn pop_front (&mut self) -> Option<()> {
-        self.data.pop_front()?.write_to_buffer();
+    pub fn pop_front(&mut self) -> Option<()> {
+        self.data
+            .pop_front()?
+            .write_to_buffer(self.width, self.height);
         Some(())
     }
 }
@@ -92,18 +98,27 @@ impl ImageQueue {
 // This model does have some issues with data races when writing to pointers
 struct ImageBuffer {
     data: Vec<Argb>,
-    ptr: NotNull<u32>
+    ptr: NotNull<u32>,
 }
 
 impl ImageBuffer {
-    pub fn new (data: Vec<Argb>, ptr: NotNull<u32>) -> Self {
+    pub fn from(data: Vec<Argb>, ptr: NotNull<u32>) -> Self {
         Self {
             data: data,
-            ptr: ptr
+            ptr: ptr,
         }
     }
-    pub fn write_to_buffer (self) {
-
+    pub fn write_to_buffer(mut self, width: Pixels, height: Pixels) {
+        for i in 0..((width) * height) {
+            unsafe {
+                *self
+                    .ptr
+                    .get_mut()
+                    .offset(i.try_into().expect(
+                        "Pointer offset failed due to the value not fitting into an isize",
+                    )) = self.data[i as usize].as_precalculated_alpha();
+            }
+        }
     }
 }
 
