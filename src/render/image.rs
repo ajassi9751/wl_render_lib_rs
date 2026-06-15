@@ -4,12 +4,13 @@ use crate::util::units::angle::Angle;
 use super::argb::Argb;
 
 use std::convert::TryInto;
+use std::collections::VecDeque;
 
 #[allow(unused)]
 pub type Pixels = u32; // Maybe make this usize
 
 // Represents an image as an array of pixels (rgbas)
-// Can be rotated
+// Can be mutated with ImageRequests
 #[derive(Debug)]
 pub struct Image {
     data: Vec<Argb>, // Think of this Vec as a coordinate plane only in the first quadrant, the image is encoded from top left to bottom right but coordinates are accesed as if in a regular first quadrant coordinate plane
@@ -45,9 +46,8 @@ impl Image {
     pub fn get_data_mut(&mut self) -> &mut Vec<Argb> {
         &mut self.data
     }
-    // Data can be borrowed to be written to a buffer or stored by the user because I haven't yet found a safe way to make an api for buffers that doesn't just copy all the info (which is thread unsafe becuase of pointers, it would be great if I could use self to consume the object for the api or use Arc or Rc)
-    pub fn get_data(&self) -> &Vec<Argb> {
-        &self.data
+    pub fn push_data(&self, queue: &mut ImageQueue) {
+        queue.push_back(ImageBuffer::new(self.data.clone(), self.ptr.clone()));
     }
     pub fn decode_image<T: ImageBackend>(&mut self, path: &str) -> std::io::Result<()> {
         self.data = T::parse_rgb(path)?;
@@ -64,16 +64,59 @@ impl Image {
     }
 }
 
+pub struct ImageQueue {
+    data: VecDeque<ImageBuffer>
+}
+
+#[allow(private_interfaces)] // The way the api is made seems wrong but to keep it "thread safe", it is locked behind this struct
+impl ImageQueue {
+    pub fn new () -> Self {
+        Self {
+            data: VecDeque::new()
+        }
+    }
+    // Method can only be called by things that can see ImageBuffer
+    pub fn push_back (&mut self, data: ImageBuffer) {
+        self.data.push_back(data);
+    }
+    // Method can be used anywhere
+    pub fn pop_front (&mut self) -> Option<()> {
+        self.data.pop_front()?.write_to_buffer();
+        Some(())
+    }
+}
+
+// A struct that stores and image in an immutable state
+// It is used to store an image in memory and is destroyed upon writing
+// Useful for prerendering buffers before submiting it to the compositor
+// This model does have some issues with data races when writing to pointers
+struct ImageBuffer {
+    data: Vec<Argb>,
+    ptr: NotNull<u32>
+}
+
+impl ImageBuffer {
+    pub fn new (data: Vec<Argb>, ptr: NotNull<u32>) -> Self {
+        Self {
+            data: data,
+            ptr: ptr
+        }
+    }
+    pub fn write_to_buffer (self) {
+
+    }
+}
+
 pub trait ImageBackend {
     fn parse_rgb(path: &str) -> std::io::Result<Vec<Argb>>; // I would rather not use &str to represent a path but std::path::Path doesn't work well
 }
 
 #[test]
 fn buffer_write_test() {
-    let mut buffer: [u32; (20 / 4) * 2] = [0_u32; (20 / 4) * 2];
+    let mut buffer: [u32; 20 * 2] = [0_u32; 20 * 2];
     let ptr = NotNull::try_from(buffer.as_mut_ptr()).unwrap();
     let mut image = Image::new(ptr, 20, 2);
-    image.get_data_mut().resize(10, Argb::new(1, 2, 3, 4));
+    image.get_data_mut().resize(40, Argb::new(1, 2, 3, 4));
     image.write_to_buffer();
     println!("{:?}", buffer);
 }

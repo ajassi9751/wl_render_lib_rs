@@ -1,7 +1,7 @@
 // Just a pointer that is garunteed to be not null
 // Better than NonNull because you don't have to check if its valid every time you access it
 // Its probably still not foolproof if stack memory goes out of scope of if heap memory isn't deallocated or multiple pointers are made causing thread unsaftey
-#[derive(Debug)]
+#[derive(Debug, Clone)] // Only implements clone for ImageBuffer but it is unsafe because it can cause data races
 pub struct NotNull<T> {
     ptr: *mut T,
 }
