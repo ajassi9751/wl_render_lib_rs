@@ -27,7 +27,7 @@ impl Image {
     }
     // Might make this a standalone function and remove ptr from Image
     pub fn write_to_buffer(&mut self) {
-        for i in 0..((self.width/4) * self.height) {
+        for i in 0..((self.width) * self.height) {
             unsafe {
                 *self.ptr.get_mut().offset(i.try_into().expect("Pointer offset failed due to the value not fitting into an isize")) = self.data[i as usize].as_precalculated_alpha();
             }
