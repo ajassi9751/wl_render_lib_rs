@@ -19,6 +19,7 @@ pub struct Image {
     height: Pixels,
 }
 
+#[allow(unused)]
 impl Image {
     pub fn new(ptr: NotNull<u32>, width: Pixels, height: Pixels) -> Self {
         Self {
@@ -53,7 +54,9 @@ impl Image {
         self.data = T::parse_rgb(path)?;
         Ok(())
     }
-    pub fn apply_request(request: &ImageRequest) {}
+    pub fn apply_request(request: &ImageRequest) {
+        todo!()
+    }
     fn get_coordinate_mut(&mut self, x: usize, y: usize) -> &mut Argb {
         let len = self.data.len();
         &mut self.data[(len - (y * self.width as usize)) + x]
