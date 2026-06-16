@@ -30,7 +30,6 @@ impl Image {
         }
     }
     // Might make this a standalone function and remove ptr from Image
-    // Returns None if failed
     #[must_use]
     pub fn write_to_buffer(&mut self) -> Option<()> {
         for i in 0..((self.width?) * self.height?) {
@@ -68,6 +67,9 @@ impl Image {
     }
     pub fn apply_request(request: &ImageRequest) {
         todo!()
+    }
+    pub fn get_height_width(&self) -> Option<(Pixels, Pixels)> { // This is not a coordinate so it is not a PixelCoordinate
+        Some((self.width?, self.height?))
     }
     fn get_coordinate_mut(&mut self, x: usize, y: usize) -> Option<&mut Argb> {
         let len = self.data.len();
