@@ -1,6 +1,6 @@
 // This file containst stuff to decode qoi files
 use crate::render::argb::Argb;
-use crate::render::image::ImageBackend;
+use crate::render::image::{ImageBackend, Pixels};
 
 // Tag enum removed, parsing is now implemented directly in parse_rgb :(
 
@@ -15,7 +15,7 @@ impl Qoi {
 
 // Honestly should just be a function pointer
 impl ImageBackend for Qoi {
-    fn parse_rgb(path: &str) -> std::io::Result<Vec<Argb>> {
+    fn parse_rgb(path: &str) -> std::io::Result<(Vec<Argb>, Pixels, Pixels)> {
         // Should probably just return the vec instead of a reference
         let mut data: Vec<Argb> = Vec::new();
         // Read entire file into memory for simpler parsing
@@ -35,12 +35,12 @@ impl ImageBackend for Qoi {
                 "Not a qoi file",
             ));
         }
-        // Find a way to use these, possibly with reserving the vec dimensions
-        let _width = ((bytes[4] as u32) << 24)
+        // Maybe use these to reserve the vec dimensions
+        let width = ((bytes[4] as u32) << 24)
             | ((bytes[5] as u32) << 16)
             | ((bytes[6] as u32) << 8)
             | (bytes[7] as u32);
-        let _height = ((bytes[8] as u32) << 24)
+        let height = ((bytes[8] as u32) << 24)
             | ((bytes[9] as u32) << 16)
             | ((bytes[10] as u32) << 8)
             | (bytes[11] as u32);
@@ -151,12 +151,12 @@ impl ImageBackend for Qoi {
                 _ => unreachable!(), // Shouldn't be possible to reach
             }
         }
-        Ok(data)
+        Ok((data, width, height))
     }
 }
 
 #[test]
 fn img_test() {
-    let mut rgb: Vec<Argb> = Qoi::parse_rgb("qoi_test_images/qoi_logo.qoi").unwrap(); // Relies on the filesystem, bad test, I know
+    let mut rgb: Vec<Argb> = Qoi::parse_rgb("qoi_test_images/qoi_logo.qoi").unwrap().0; // Relies on the filesystem, bad test, I know
     rgb.shrink_to_fit(); // Vec doesn't need to grow anymore
 }

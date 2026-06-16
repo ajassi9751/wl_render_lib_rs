@@ -15,55 +15,67 @@ pub type Pixels = u32; // Maybe make this usize
 pub struct Image {
     data: Vec<Argb>, // Think of this Vec as a coordinate plane only in the first quadrant, the image is encoded from top left to bottom right but coordinates are accesed as if in a regular first quadrant coordinate plane
     ptr: NotNull<u32>, // Pointer that will be written to, maybe should be a slice to be more explicit about size?
-    width: Pixels,
-    height: Pixels,
+    width: Option<Pixels>,
+    height: Option<Pixels>,
 }
 
 #[allow(unused)]
 impl Image {
-    pub fn new(ptr: NotNull<u32>, width: Pixels, height: Pixels) -> Self {
+    pub fn new(ptr: NotNull<u32>) -> Self {
         Self {
             data: Vec::new(),
             ptr: ptr,
-            width: width,
-            height: height,
+            width: None,
+            height: None,
         }
     }
     // Might make this a standalone function and remove ptr from Image
-    pub fn write_to_buffer(&mut self) {
-        for i in 0..((self.width) * self.height) {
+    // Returns None if failed
+    #[must_use]
+    pub fn write_to_buffer(&mut self) -> Option<()> {
+        for i in 0..((self.width?) * self.height?) {
             unsafe {
-                *self
-                    .ptr
-                    .get_mut()
-                    .offset(i.try_into().expect(
-                        "Pointer offset failed due to the value not fitting into an isize",
-                    )) = self.data[i as usize].as_precalculated_alpha();
+                *self.ptr.get_mut().offset(i.try_into().expect(
+                    "Pointer offset failed due to the value not fitting into an isize", // Probably a good idea to panic from here because if you try to recover, you have corruption
+                )) = self.data[i as usize].as_precalculated_alpha();
             }
         }
+        Some(())
     }
     // Data shouldn't be mutated so this is for testing
     #[cfg(test)]
     pub fn get_data_mut(&mut self) -> &mut Vec<Argb> {
         &mut self.data
     }
+    // Dimensions shouldn't be altered from outside so this is only for tests
+    #[cfg(test)]
+    pub fn set_dimensions(&mut self, width: Pixels, height: Pixels) {
+        self.width = Some(width);
+        self.height = Some(height);
+    }
     pub fn push_data(&self, queue: &mut ImageQueue) {
         queue.push_back(ImageBuffer::from(self.data.clone(), self.ptr.clone()));
     }
+    pub fn create_queue(&self) -> Option<ImageQueue> {
+        Some(ImageQueue::new(self.width?, self.height?))
+    }
     pub fn decode_image<T: ImageBackend>(&mut self, path: &str) -> std::io::Result<()> {
-        self.data = T::parse_rgb(path)?;
+        let (data, width, height) = T::parse_rgb(path)?;
+        self.data = data;
+        self.width = Some(width);
+        self.height = Some(height);
         Ok(())
     }
     pub fn apply_request(request: &ImageRequest) {
         todo!()
     }
-    fn get_coordinate_mut(&mut self, x: usize, y: usize) -> &mut Argb {
+    fn get_coordinate_mut(&mut self, x: usize, y: usize) -> Option<&mut Argb> {
         let len = self.data.len();
-        &mut self.data[(len - (y * self.width as usize)) + x]
+        Some(&mut self.data[(len - (y * self.width? as usize)) + x])
     }
-    fn get_coordinate(&self, x: usize, y: usize) -> &Argb {
+    fn get_coordinate(&self, x: usize, y: usize) -> Option<&Argb> {
         let len = self.data.len();
-        &self.data[(len - (y * self.width as usize)) + x]
+        Some(&self.data[(len - (y * self.width? as usize)) + x])
     }
 }
 
@@ -126,16 +138,17 @@ impl ImageBuffer {
 }
 
 pub trait ImageBackend {
-    fn parse_rgb(path: &str) -> std::io::Result<Vec<Argb>>; // I would rather not use &str to represent a path but std::path::Path doesn't work well
+    fn parse_rgb(path: &str) -> std::io::Result<(Vec<Argb>, Pixels, Pixels)>; // I would rather not use &str to represent a path but std::path::Path doesn't work well
 }
 
 #[test]
 fn buffer_write_test() {
     let mut buffer: [u32; 20 * 2] = [0_u32; 20 * 2];
     let ptr = NotNull::try_from(buffer.as_mut_ptr()).unwrap();
-    let mut image = Image::new(ptr, 20, 2);
+    let mut image = Image::new(ptr);
+    image.set_dimensions(20, 2);
     image.get_data_mut().resize(40, Argb::new(1, 2, 3, 4));
-    image.write_to_buffer();
+    image.write_to_buffer().expect("Write failed");
     println!("{:?}", buffer);
 }
 
