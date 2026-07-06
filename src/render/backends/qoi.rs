@@ -151,6 +151,7 @@ impl ImageBackend for Qoi {
                 _ => unreachable!(), // Shouldn't be possible to reach
             }
         }
+        data.shrink_to_fit();
         Ok((data, width, height))
     }
 }
