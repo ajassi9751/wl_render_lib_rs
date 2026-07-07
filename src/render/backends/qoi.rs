@@ -1,4 +1,4 @@
-// This file containst stuff to decode qoi files
+// This file contains stuff to decode qoi files
 use crate::render::argb::Argb;
 use crate::render::image::{ImageBackend, Pixels};
 
