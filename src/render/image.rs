@@ -79,6 +79,9 @@ impl Image {
         let len = self.data.len();
         Some(&self.data[(len - (y * self.width? as usize)) + x])
     }
+    pub fn change_ptr(&mut self, ptr: NotNull<u32>) {
+        self.ptr = ptr;
+    }
 }
 
 pub struct ImageQueue {
