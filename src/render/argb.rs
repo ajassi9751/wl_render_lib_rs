@@ -1,9 +1,10 @@
+#[repr(C)]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Argb {
-    pub a: u8,
-    pub r: u8,
-    pub g: u8,
     pub b: u8,
+    pub g: u8,
+    pub r: u8,
+    pub a: u8,
 }
 
 impl Argb {
@@ -29,6 +30,21 @@ impl Argb {
             | (((self.r as u32 * self.a as u32 + 127_u32) / 255) << 16)
             | (((self.g as u32 * self.a as u32 + 127_u32) / 255) << 8)
             | ((self.b as u32 * self.a as u32 + 127_u32) / 255)
+    }
+    pub fn precalculate_alpha_mut(&mut self) {
+        if self.a == 0 {
+            self.a = 0;
+            self.r = 0;
+            self.g = 0;
+            self.b = 0;
+        }
+        else if self.a == 255 {
+        }
+        else {
+            self.r = ((self.r as u32 * self.a as u32 + 127_u32) / 255) as u8;
+            self.g = ((self.g as u32 * self.a as u32 + 127_u32) / 255) as u8;
+            self.b = ((self.b as u32 * self.a as u32 + 127_u32) / 255) as u8;
+        }
     }
 }
 

@@ -3,7 +3,6 @@ use crate::util::units::angle::Angle;
 
 use super::argb::Argb;
 
-use std::collections::VecDeque;
 use std::convert::TryInto;
 
 #[allow(unused)]
@@ -52,12 +51,6 @@ impl Image {
         self.width = Some(width);
         self.height = Some(height);
     }
-    pub fn push_data(&self, queue: &mut ImageQueue) {
-        queue.push_back(ImageBuffer::from(self.data.clone(), self.ptr.clone()));
-    }
-    pub fn create_queue(&self) -> Option<ImageQueue> {
-        Some(ImageQueue::new(self.width?, self.height?))
-    }
     pub fn decode_image<T: ImageBackend>(&mut self, path: &str) -> std::io::Result<()> {
         let (data, width, height) = T::parse_rgb(path)?;
         self.data = data;
@@ -82,62 +75,35 @@ impl Image {
     pub fn change_ptr(&mut self, ptr: NotNull<u32>) {
         self.ptr = ptr;
     }
-}
-
-pub struct ImageQueue {
-    data: VecDeque<ImageBuffer>,
-    width: Pixels,
-    height: Pixels,
-}
-
-#[allow(private_interfaces)] // The way the api is made seems wrong but to keep it "thread safe", it is locked behind this struct
-impl ImageQueue {
-    pub fn new(width: Pixels, height: Pixels) -> Self {
-        Self {
-            data: VecDeque::new(),
-            width: width,
-            height: height,
-        }
-    }
-    // Method can only be called by things that can see ImageBuffer
-    pub fn push_back(&mut self, data: ImageBuffer) {
-        self.data.push_back(data);
-    }
-    // Method can be used anywhere
-    pub fn pop_front(&mut self) -> Option<()> {
-        self.data
-            .pop_front()?
-            .write_to_buffer(self.width, self.height);
-        Some(())
+    pub fn into_buffer(mut self) -> Option<ImageBuffer> {
+        let mut data: Vec<Argb> = self.data.into_iter().map(|mut i| { i.precalculate_alpha_mut(); i}).collect();
+        data.shrink_to_fit(); // Maybe not needed and might hurt performance
+        Some(ImageBuffer {
+            data: data,
+            ptr: self.ptr,
+            size: self.width? * self.height?
+        })
     }
 }
 
-// A struct that stores and image in an immutable state
+// A struct that stores and image in an immutable state with precalculated alpha
 // It is used to store an image in memory and is destroyed upon writing
 // Useful for prerendering buffers before submiting it to the compositor
 // This model does have some issues with data races when writing to pointers
-struct ImageBuffer {
+pub struct ImageBuffer {
     data: Vec<Argb>,
     ptr: NotNull<u32>,
+    size: Pixels,
 }
 
 impl ImageBuffer {
-    pub fn from(data: Vec<Argb>, ptr: NotNull<u32>) -> Self {
-        Self {
-            data: data,
-            ptr: ptr,
-        }
+    pub fn change_ptr(&mut self, ptr: NotNull<u32>) {
+        self.ptr = ptr;
     }
-    pub fn write_to_buffer(mut self, width: Pixels, height: Pixels) {
-        for i in 0..((width) * height) {
-            unsafe {
-                *self
-                    .ptr
-                    .get_mut()
-                    .offset(i.try_into().expect(
-                        "Pointer offset failed due to the value not fitting into an isize",
-                    )) = self.data[i as usize].as_precalculated_alpha();
-            }
+    pub fn write_to_buffer(&mut self) {
+        // This copy is faster and uses SIMD
+        unsafe {
+            std::ptr::copy_nonoverlapping(self.data.as_ptr() as *const u32, self.ptr.get_mut(), self.size.try_into().expect("Memcopy failed due to size value not fitting into usize"));
         }
     }
 }
