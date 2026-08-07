@@ -14,7 +14,7 @@ pub struct Valid;
 // Represents an image as an array of pixels (rgbas)
 // Can be mutated with ImageRequests
 #[derive(Debug)]
-pub struct Image <T> {
+pub struct Image<T> {
     data: Vec<Argb>, // Think of this Vec as a coordinate plane only in the first quadrant, the image is encoded from top left to bottom right but coordinates are accesed as if in a regular first quadrant coordinate plane
     ptr: NotNull<u32>, // Pointer that will be written to, maybe should be a slice to be more explicit about size?
     width: Pixels,
@@ -23,7 +23,7 @@ pub struct Image <T> {
 }
 
 #[allow(unused)]
-impl Image <Invalid> {
+impl Image<Invalid> {
     pub fn new(ptr: NotNull<u32>) -> Self {
         Self {
             data: Vec::new(),
@@ -45,7 +45,7 @@ impl Image <Invalid> {
     }
     // Forces a valid image so it is for testing only
     #[cfg(test)]
-    pub fn make_valid (self) -> Image::<Valid> {
+    pub fn make_valid(self) -> Image<Valid> {
         Image::<Valid> {
             data: self.data,
             ptr: self.ptr,
@@ -57,7 +57,7 @@ impl Image <Invalid> {
 }
 
 #[allow(unused)]
-impl Image <Valid> {
+impl Image<Valid> {
     // Might make this a standalone function and remove ptr from Image
     pub fn write_to_buffer(&mut self) {
         for i in 0..(self.width * self.height) {
@@ -71,7 +71,8 @@ impl Image <Valid> {
     pub fn apply_request(request: &ImageRequest) {
         todo!()
     }
-    pub fn get_height_width(&self) -> (Pixels, Pixels) { // This is not a coordinate so it is not a PixelCoordinate
+    pub fn get_height_width(&self) -> (Pixels, Pixels) {
+        // This is not a coordinate so it is not a PixelCoordinate
         (self.width, self.height)
     }
     fn get_coordinate_mut(&mut self, x: usize, y: usize) -> &mut Argb {
@@ -86,12 +87,19 @@ impl Image <Valid> {
         self.ptr = ptr;
     }
     pub fn into_buffer(mut self) -> ImageBuffer {
-        let mut data: Vec<Argb> = self.data.into_iter().map(|mut i| { i.precalculate_alpha_mut(); i}).collect();
+        let mut data: Vec<Argb> = self
+            .data
+            .into_iter()
+            .map(|mut i| {
+                i.precalculate_alpha_mut();
+                i
+            })
+            .collect();
         data.shrink_to_fit(); // Maybe not needed and might hurt performance
         ImageBuffer {
             data: data,
             ptr: self.ptr,
-            size: self.width * self.height
+            size: self.width * self.height,
         }
     }
     // Data shouldn't be mutated so this is for testing
@@ -124,7 +132,13 @@ impl ImageBuffer {
     pub fn write_to_buffer(&mut self) {
         // This copy is faster and uses SIMD
         unsafe {
-            std::ptr::copy_nonoverlapping(self.data.as_ptr() as *const u32, self.ptr.get_mut(), self.size.try_into().expect("Memcopy failed due to size value not fitting into usize"));
+            std::ptr::copy_nonoverlapping(
+                self.data.as_ptr() as *const u32,
+                self.ptr.get_mut(),
+                self.size
+                    .try_into()
+                    .expect("Memcopy failed due to size value not fitting into usize"),
+            );
         }
     }
 }
