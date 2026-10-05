@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+# Make this a feature
+png = "0.18.1"
 
 [profile.dev]
 overflow-checks = false # Wrap around arithmetic is needed for decoding qoi files

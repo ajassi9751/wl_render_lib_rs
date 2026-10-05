@@ -13,7 +13,6 @@ impl Qoi {
     }
 }
 
-// Honestly should just be a function pointer
 impl ImageBackend for Qoi {
     fn parse_rgb(path: &str) -> std::io::Result<(Vec<Argb>, Pixels, Pixels)> {
         // Should probably just return the vec instead of a reference
@@ -157,7 +156,7 @@ impl ImageBackend for Qoi {
 }
 
 #[test]
-fn img_test() {
+fn qoi_img_test() {
     let mut rgb: Vec<Argb> = Qoi::parse_rgb("qoi_test_images/qoi_logo.qoi").unwrap().0; // Relies on the filesystem, bad test, I know
     rgb.shrink_to_fit(); // Vec doesn't need to grow anymore
 }

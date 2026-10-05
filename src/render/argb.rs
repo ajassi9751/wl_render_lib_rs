@@ -44,6 +44,22 @@ impl Argb {
             self.b = ((self.b as u32 * self.a as u32 + 127_u32) / 255) as u8;
         }
     }
+    // 100% safest functions ever
+    pub fn rotate_right(&mut self, n: u32) {
+        // These are safe becuase b can be cast to a u32 becuase the struct essentially contains a u32
+        let r: *mut u8 = &mut self.b;
+        let ptr = r as *mut u32;
+        unsafe {
+            *ptr = (self.b as u32).rotate_right(n);
+        }
+    }
+    pub fn rotate_left(&mut self, n: u32) {
+        let r: *mut u8 = &mut self.b;
+        let ptr = r as *mut u32;
+        unsafe {
+            *ptr = (self.b as u32).rotate_left(n);
+        }
+    }
 }
 
 #[test]
