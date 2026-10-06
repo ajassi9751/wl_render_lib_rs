@@ -26,17 +26,17 @@ impl ImageBackend for Png {
         })?;
         let bytes = &mut buf[..info.buffer_size()];
 
-        for chunk in bytes.into_iter() {
-            // for chunk in bytes.chunks_exact_mut(4) {
-            // let ptr = chunk.as_mut_ptr() as *mut u32;
-            // This is probably safe becuase it is in chunks of 4 u8's
-            // We combine them into a u32 to efficiently bitshift
-            // Writing to that u32 should be safe
-            // unsafe {
-            // *ptr = (chunk[0] as u32).rotate_right(8);
-            // }
-            chunk.rotate_right(8);
-        }
+        // for chunk in bytes.into_iter() {
+        // for chunk in bytes.chunks_exact_mut(4) {
+        // let ptr = chunk.as_mut_ptr() as *mut u32;
+        // This is probably safe becuase it is in chunks of 4 u8's
+        // We combine them into a u32 to efficiently bitshift
+        // Writing to that u32 should be safe
+        // unsafe {
+        // *ptr = (chunk[0] as u32).rotate_right(8);
+        // }
+        // chunk.rotate_right(8);
+        // }
         Ok((buf, info.width, info.height))
     }
 }
@@ -59,5 +59,5 @@ fn rotate_test() {
 fn png_img_test() {
     let mut rgb: Vec<Argb> = Png::parse_rgb("qoi_test_images/qoi_logo.png").unwrap().0; // Relies on the filesystem, bad test, I know
     rgb.shrink_to_fit(); // Vec doesn't need to grow anymore
-                         // println!("{:?}", rgb);
+    // println!("{:?}", rgb);
 }
