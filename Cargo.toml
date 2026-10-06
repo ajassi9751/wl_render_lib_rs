@@ -5,7 +5,11 @@ edition = "2024"
 
 [dependencies]
 # Make this a feature
-png = "0.18.1"
+png = { version = "0.18.1", optional = true }
+
+[features]
+default = ["png"]
+png = ["dep:png"]
 
 [profile.dev]
 overflow-checks = false # Wrap around arithmetic is needed for decoding qoi files

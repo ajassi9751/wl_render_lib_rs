@@ -1,4 +1,4 @@
 pub mod qoi;
 
-// Make this a feature
+#[cfg(feature = "png")]
 pub mod png;
