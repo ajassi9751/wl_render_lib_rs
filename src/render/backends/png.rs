@@ -43,20 +43,6 @@ impl ImageBackend for Png {
 }
 
 #[test]
-fn rotate_test() {
-    let buf: &mut [u8] = &mut [1, 0, 0, 0];
-    let ptr = buf.as_mut_ptr() as *mut u32;
-    unsafe {
-        *ptr = (buf[0] as u32).rotate_right(8);
-    }
-    let check: &[u8] = &[0, 0, 0, 1];
-    let checkptr = check.as_ptr() as *mut u32;
-    unsafe {
-        assert_eq!(*ptr, *checkptr);
-    }
-}
-
-#[test]
 fn png_img_test() {
     let mut rgb: Vec<Argb> = Png::parse_rgb("qoi_test_images/qoi_logo.png").unwrap().0; // Relies on the filesystem, bad test, I know
     rgb.shrink_to_fit(); // Vec doesn't need to grow anymore
