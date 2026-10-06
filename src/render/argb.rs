@@ -60,6 +60,11 @@ impl Argb {
             *ptr = (self.b as u32).rotate_left(n);
         }
     }
+    pub fn swap_r_b(&mut self) {
+        self.r ^= self.b;
+        self.b ^= self.r;
+        self.r ^= self.b;
+    }
 }
 
 #[test]
