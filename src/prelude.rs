@@ -7,6 +7,5 @@ pub use crate::render::image::{
 };
 pub use crate::util::{not_null::NotNull, units::angle::Angle};
 
-
 #[cfg(feature = "png")]
 pub use crate::render::backends::png::Png;

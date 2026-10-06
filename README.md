@@ -5,5 +5,5 @@ The main way to interact with the library is with the image struct (in the rende
 The image struct contains an in memory copy of the pixel representation of an image, the width of the image, the height of the image, and a pointer to write data to (you get the pointer from the mmap call)\
 The image struct should be created once per image that you want to display, this is because you can mutate the image through an ImageRequest, It also could create race conditions if done otherwise\
 Using the image request, you can do many things to an image such as rotation and translation, then apply the request to the image\
-To create an image, you need to use a backend, the only one that exists right now is the qoi backend which can parse a qoi image\
+To create an image, you need to use a backend, the only ones that exists right now are the qoi and png (can be disabled via a feature if you don't want extra dependencies) backends which can decode their respective images\
 The purpose of this library is to be able to easily render things as a wayland client while also retaining the flexibility to use it with protocols that typical toolkits don't support, this is especially useful for wlr or custom protocols
