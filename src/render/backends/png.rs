@@ -38,6 +38,7 @@ impl ImageBackend for Png {
             // }
             // chunk.rotate_right(8);
         }
+        buf.shrink_to_fit();
         Ok((buf, info.width, info.height))
     }
 }
