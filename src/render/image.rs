@@ -159,9 +159,9 @@ fn buffer_write_test() {
 }
 
 // Simmilar to a swerve request in ctre, represents an object that stores rotations and such that are requested for an image
-#[derive(Debug, PartialEq, Eq)] // New does the same as default so it isn't derived
+#[derive(Debug, PartialEq, Clone)] // New does the same as default so it isn't derived
 pub struct ImageRequest {
-    actions: Vec<ImageAction>,
+    actions: Vec<ImageActionEnum>,
 }
 
 impl ImageRequest {
@@ -170,15 +170,15 @@ impl ImageRequest {
             actions: Vec::new(),
         }
     }
-    pub fn from(actions: Vec<ImageAction>) -> Self {
+    pub fn from(actions: Vec<ImageActionEnum>) -> Self {
         Self { actions: actions }
     }
-    pub fn add_action(&mut self, action: ImageAction) -> &mut Self {
+    pub fn add_action(&mut self, action: ImageActionEnum) -> &mut Self {
         self.actions.push(action);
         self
     }
     // I wouldve liked for this to consume itself but then there would allocations for no need sometimes
-    pub fn get_actions(&self) -> &Vec<ImageAction> {
+    pub fn get_actions(&self) -> &Vec<ImageActionEnum> {
         &self.actions
     }
 }
@@ -188,10 +188,40 @@ pub type PixelCoordinate = (Pixels, Pixels); // Tuple of pixels, X and Y respect
 
 // Enum that represents an action that can be done to an image
 #[non_exhaustive] // More can be added in the future
-#[derive(Debug, PartialEq, Eq)]
-pub enum ImageAction {
-    Rotate(Angle),
+#[derive(Debug, PartialEq, Clone)]
+pub enum ImageActionEnum {
+    Rotate(RotationAction),
     Translate(PixelCoordinate),
     Transparency(i32), // Will just add or subtract transparency
     Resize(u32),
+}
+
+pub trait ImageAction {
+    fn apply (&self, data: &mut Vec<Argb>, height: Pixels, width: Pixels);
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct RotationAction {
+    angle: Angle
+}
+
+impl ImageAction for RotationAction {
+    fn apply (&self, data: &mut Vec<Argb>, height: Pixels, width: Pixels) {
+        let centerX: u32 = width / 2;
+        let centerY: u32 = height / 2;
+        // Would have to change for width and height since the buffer size likley has to change
+        // let destCx: f32 = width as f32 / 2_f32;
+        // let destCy: f32 = height as f32 / 2_f32;
+
+        let cosTheta: f32 = self.angle.as_radians().cos() as f32;
+        let sinTheta: f32 = self.angle.as_radians().sin() as f32;
+
+        for iy in 0..height {
+            let y = iy - centerY;
+            for ix in 0..width {
+                let x = ix - centerX;
+                println!("x prime: {}, y prime: {}", (((x as f32)*cosTheta)-((y as f32)*sinTheta)), (((x as f32)*sinTheta)+((y as f32)*cosTheta)));
+            }
+        }
+    }
 }
