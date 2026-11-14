@@ -189,20 +189,41 @@ pub mod actions {
     
     impl super::ImageAction for RotationAction {
         fn apply (&self, data: &mut Vec<super::Argb>, height: super::Pixels, width: super::Pixels) {
-            let centerX: u32 = width / 2;
-            let centerY: u32 = height / 2;
-            // Would have to change for width and height since the buffer size likley has to change
-            // let destCx: f32 = width as f32 / 2_f32;
-            // let destCy: f32 = height as f32 / 2_f32;
-    
-            let cosTheta: f32 = self.angle.as_radians().cos() as f32;
-            let sinTheta: f32 = self.angle.as_radians().sin() as f32;
-    
+            // Clone the original data so we can read from it while mutating `data` in-place
+            let src_data = data.clone();
+            
+            // Find the center of the image
+            let cx = width as f32 / 2.0;
+            let cy = height as f32 / 2.0;
+
+            // Get angle in radians
+            let theta = self.angle.as_radians() as f32;
+            let cos_theta = theta.cos();
+            let sin_theta = theta.sin();
+
             for iy in 0..height {
-                let y = iy - centerY;
+                let dy = iy as f32 - cy;
                 for ix in 0..width {
-                    let x = ix - centerX;
-                    println!("x prime: {}, y prime: {}", (((x as f32)*cosTheta)-((y as f32)*sinTheta)), (((x as f32)*sinTheta)+((y as f32)*cosTheta)));
+                    let dx = ix as f32 - cx;
+
+                    // Inverse rotation formula to find source coordinates
+                    let sx = dx * cos_theta + dy * sin_theta + cx;
+                    let sy = -dx * sin_theta + dy * cos_theta + cy;
+
+                    let target_idx = (iy * width + ix) as usize;
+
+                    // Check if source coordinates fall within the image bounds
+                    if sx >= 0.0 && sx < width as f32 && sy >= 0.0 && sy < height as f32 {
+                        // Nearest-neighbor sampling
+                        let src_x = sx.round() as usize;
+                        let src_y = sy.round() as usize;
+                        let src_idx = (src_y * width as usize) + src_x;
+                        
+                        data[target_idx] = src_data[src_idx];
+                    } else {
+                        // Out-of-bounds pixels become transparent (or background color)
+                        data[target_idx] = super::Argb::new(0, 0, 0, 0);
+                    }
                 }
             }
         }
