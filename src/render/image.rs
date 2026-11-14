@@ -68,12 +68,16 @@ impl Image<Valid> {
             }
         }
     }
-    pub fn apply_request(request: &ImageRequest) {
+    pub fn apply_action(action: impl ImageAction) {
         todo!()
     }
-    pub fn get_height_width(&self) -> (Pixels, Pixels) {
-        // This is not a coordinate so it is not a PixelCoordinate
-        (self.width, self.height)
+    #[inline]
+    pub fn get_height(&self) -> Pixels {
+        self.height
+    }
+    #[inline]
+    pub fn get_width(&self) -> Pixels {
+        self.width
     }
     fn get_coordinate_mut(&mut self, x: usize, y: usize) -> &mut Argb {
         let len = self.data.len();
@@ -158,69 +162,48 @@ fn buffer_write_test() {
     println!("{:?}", buffer);
 }
 
-// Simmilar to a swerve request in ctre, represents an object that stores rotations and such that are requested for an image
-#[derive(Debug, PartialEq, Clone)] // New does the same as default so it isn't derived
-pub struct ImageRequest {
-    actions: Vec<ImageActionEnum>,
-}
-
-impl ImageRequest {
-    pub fn new() -> Self {
-        Self {
-            actions: Vec::new(),
-        }
-    }
-    pub fn from(actions: Vec<ImageActionEnum>) -> Self {
-        Self { actions: actions }
-    }
-    pub fn add_action(&mut self, action: ImageActionEnum) -> &mut Self {
-        self.actions.push(action);
-        self
-    }
-    // I wouldve liked for this to consume itself but then there would allocations for no need sometimes
-    pub fn get_actions(&self) -> &Vec<ImageActionEnum> {
-        &self.actions
-    }
-}
-
-#[allow(unused)]
-pub type PixelCoordinate = (Pixels, Pixels); // Tuple of pixels, X and Y respectively
+// #[allow(unused)]
+// pub type PixelCoordinate = (Pixels, Pixels); // Tuple of pixels, X and Y respectively
 
 // Enum that represents an action that can be done to an image
-#[non_exhaustive] // More can be added in the future
-#[derive(Debug, PartialEq, Clone)]
-pub enum ImageActionEnum {
-    Rotate(RotationAction),
-    Translate(PixelCoordinate),
-    Transparency(i32), // Will just add or subtract transparency
-    Resize(u32),
-}
+// #[non_exhaustive] // More can be added in the future
+// #[derive(Debug, PartialEq, Clone)]
+// pub enum ImageActionEnum {
+//     Rotate(RotationAction),
+//     Translate(PixelCoordinate),
+//     Transparency(i32), // Will just add or subtract transparency
+//     Resize(u32),
+// }
 
 pub trait ImageAction {
     fn apply (&self, data: &mut Vec<Argb>, height: Pixels, width: Pixels);
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct RotationAction {
-    angle: Angle
-}
-
-impl ImageAction for RotationAction {
-    fn apply (&self, data: &mut Vec<Argb>, height: Pixels, width: Pixels) {
-        let centerX: u32 = width / 2;
-        let centerY: u32 = height / 2;
-        // Would have to change for width and height since the buffer size likley has to change
-        // let destCx: f32 = width as f32 / 2_f32;
-        // let destCy: f32 = height as f32 / 2_f32;
-
-        let cosTheta: f32 = self.angle.as_radians().cos() as f32;
-        let sinTheta: f32 = self.angle.as_radians().sin() as f32;
-
-        for iy in 0..height {
-            let y = iy - centerY;
-            for ix in 0..width {
-                let x = ix - centerX;
-                println!("x prime: {}, y prime: {}", (((x as f32)*cosTheta)-((y as f32)*sinTheta)), (((x as f32)*sinTheta)+((y as f32)*cosTheta)));
+// Module for user facing public actions
+// I should make the imports better
+pub mod actions {
+    #[derive(Debug, PartialEq, Clone)]
+    pub struct RotationAction {
+        angle: super::Angle
+    }
+    
+    impl super::ImageAction for RotationAction {
+        fn apply (&self, data: &mut Vec<super::Argb>, height: super::Pixels, width: super::Pixels) {
+            let centerX: u32 = width / 2;
+            let centerY: u32 = height / 2;
+            // Would have to change for width and height since the buffer size likley has to change
+            // let destCx: f32 = width as f32 / 2_f32;
+            // let destCy: f32 = height as f32 / 2_f32;
+    
+            let cosTheta: f32 = self.angle.as_radians().cos() as f32;
+            let sinTheta: f32 = self.angle.as_radians().sin() as f32;
+    
+            for iy in 0..height {
+                let y = iy - centerY;
+                for ix in 0..width {
+                    let x = ix - centerX;
+                    println!("x prime: {}, y prime: {}", (((x as f32)*cosTheta)-((y as f32)*sinTheta)), (((x as f32)*sinTheta)+((y as f32)*cosTheta)));
+                }
             }
         }
     }
